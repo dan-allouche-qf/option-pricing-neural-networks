@@ -1,0 +1,17 @@
+# LaTeX build files
+rapport/*.aux
+rapport/*.log
+rapport/*.out
+rapport/*.toc
+rapport/*.tex
+rapport/*.synctex*
+
+# Python
+__pycache__/
+*.pyc
+*.npz
+*.pt
+
+# OS
+.DS_Store
+.Rhistory
