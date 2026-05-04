@@ -1,17 +1,43 @@
-# LaTeX build files
-rapport/*.aux
-rapport/*.log
-rapport/*.out
-rapport/*.toc
-rapport/*.tex
-rapport/*.synctex*
-
-# Python
-__pycache__/
-*.pyc
-*.npz
-*.pt
-
-# OS
+# --- macOS ---
 .DS_Store
-.Rhistory
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Virtual envs ---
+venv/
+.venv/
+env/
+.env
+
+# --- Editors / per-user tooling ---
+.vscode/
+.idea/
+*.swp
+.claude/
+
+# --- LaTeX intermediate (keep .tex and .pdf) ---
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.synctex.gz
+report/*.fdb_latexmk
+report/*.fls
+report/*.bbl
+report/*.blg
+
+# --- Heavy regenerable artifacts (kept locally, not versioned) ---
+# LHS data caches (~187 MB) are deterministic from seed=42, so regeneration
+# is reproducible. Skip them in the repo.
+outputs/data/
+
+# Verbose stdout captures from run.py (per-experiment + master log)
+outputs/results/*_log.txt
+outputs/results/run.log

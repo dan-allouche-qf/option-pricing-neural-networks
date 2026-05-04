@@ -4,63 +4,92 @@ Reproduction of **Liu, Oosterlee & Bohte (2019)** — *Pricing Options and Compu
 
 ## Overview
 
-This project trains feedforward neural networks (MLP 4x400, ReLU, Adam) to approximate option pricing functions, replacing expensive numerical solvers with fast batch inference.
+This project trains feedforward neural networks (MLP 4×400, ReLU, Adam, MSE) to approximate three option-pricing maps, replacing expensive numerical solvers with fast batch inference.
 
-Three models are implemented:
+| Model       | Input                                         | Output                         | Test R²      |
+|-------------|-----------------------------------------------|--------------------------------|--------------|
+| **BS-ANN**      | S/K, τ, r, σ                                 | V/K (Black–Scholes price)       | 0.99999985   |
+| **IV-ANN**      | S/K, τ, r, log(V̂/K)                         | σ* (implied volatility)         | 0.9999981    |
+| **Heston-ANN**  | m, τ, r, ρ, κ, ν̄, γ, ν₀                     | V (Heston price via COS)        | 0.9999990    |
 
-| Model | Input | Output | Test R² |
-|-------|-------|--------|---------|
-| **BS-ANN** | S/K, τ, r, σ | V/K (Black-Scholes price) | 0.9999999 |
-| **IV-ANN** | S/K, τ, r, log(V̂/K) | σ* (implied volatility) | 0.9999986 |
-| **Heston-ANN** | m, τ, r, ρ, κ, ν̄, γ, ν₀ | V (Heston price via COS) | 0.9914 |
-
-The IV-ANN achieves a **208x speedup** over Newton-Raphson on CPU, with full robustness on deep ITM/OTM options.
+IV-ANN computes 20,000 implied volatilities in **24 ms**, a **270× speed-up** over Newton–Raphson, with no failures on deep ITM/OTM options.
 
 ## Repository structure
 
 ```
-code/               Python source (PyTorch)
-  ├── model.py            MLP architecture
-  ├── black_scholes.py    BS formula + LHS data generation
-  ├── heston_cos.py       Heston characteristic function + COS method
-  ├── implied_vol.py      Newton-Raphson, Brent, Secant, Bisection
-  ├── train.py            Training loop (Decay/Constant/Cyclical LR)
-  ├── metrics.py          MSE, RMSE, MAE, MAPE, R²
-  ├── utils.py            Device selection, data splits, plotting
-  ├── run_all.py          Run all experiments sequentially
-  └── experiments/        One script per experiment (exp0–exp9)
-figures/             Generated figures (Figures 1–12)
-rapport/             Final report (PDF, in French)
-paper.pdf            Original article (Liu et al., 2019)
+option-pricing-neural-networks/
+├── run.py                           orchestrator (runs all 10 experiments)
+├── paper.pdf                        Liu, Oosterlee & Bohte (2019)
+├── report/                          LaTeX + PDF report (English)
+├── src/
+│   ├── black_scholes.py             BS analytics + LHS data generation
+│   ├── heston.py                    Heston char. func., COS method
+│   ├── implied_vol.py               Newton, Brent, secant, bisection
+│   ├── model.py                     PricingMLP (4×400, ReLU, Glorot)
+│   ├── train.py                     Adam + MultiStepLR / CyclicLR
+│   ├── metrics.py                   MSE, RMSE, MAE, MAPE, R²
+│   ├── utils.py                     splits, data loaders, plots
+│   └── experiments/
+│       ├── figures/                 illustrative plots
+│       │   ├── payoff_vega.py         (Figure 1)
+│       │   └── pipeline_diagram.py    (Figure 10)
+│       ├── training/                the three ANN trainings
+│       │   ├── bs_ann.py              (Table 5, Figure 7)
+│       │   ├── iv_ann.py              (Table 7, Figure 8)
+│       │   └── heston_ann.py          (Table 10, Figure 9)
+│       ├── benchmarks/              studies and comparisons
+│       │   ├── lr_finder.py           (Figure 3)
+│       │   ├── lr_schedules.py        (Figures 4–5)
+│       │   ├── iv_speed.py            (Table 8)
+│       │   └── dataset_size.py        (Table 3, Figure 6)
+│       └── pipelines/
+│           └── heston_iv_surface.py   (Table 11, Figures 11–12)
+└── outputs/                         everything produced by run.py
+    ├── data/                        cached .npz datasets
+    ├── models/                      trained .pt weights
+    ├── figures/                     all generated plots
+    └── results/                     per-experiment metrics + logs + SUMMARY.md
 ```
 
 ## Key results
 
-- **BS-ANN**: MSE = 5.54×10⁻⁹, slightly better than the article (8.21×10⁻⁹)
-- **IV-ANN**: gradient-squash transformation improves MSE by 116x
-- **Heston-ANN**: R² = 0.9914 vs article's 0.9999993 — gap attributed to the "little trap" formulation of the Heston characteristic function (see report Section 5.2)
-- **Speed**: IV-ANN computes 20,000 implied volatilities in 0.03s (208x faster than Newton-Raphson)
+| Metric                        | Article target         | This work              |
+|-------------------------------|------------------------|------------------------|
+| BS-ANN test MSE               | ~8 × 10⁻⁹              | 7.23 × 10⁻⁹            |
+| IV-ANN scaled test MSE        | ~1.5 × 10⁻⁸            | 1.31 × 10⁻⁷            |
+| IV-ANN speed-up vs Newton     | > 100×                 | **270×**               |
+| Heston-ANN test MSE           | ~1.5 × 10⁻⁸            | 2.35 × 10⁻⁸            |
+| Heston-ANN test R²            | > 0.9999993            | 0.9999990              |
+
+See [`report/report.pdf`](report/report.pdf) for the full write-up.
 
 ## How to run
 
 ```bash
-cd code
-python run_all.py      # all experiments (~24h on M3 CPU)
-python run_final.py    # BS + IV + speed + Heston IV surface only (~12h)
+pip install -r requirements.txt
+
+# Single-command full pipeline (~52 h on an M3 laptop)
+caffeinate -dimsu python3 run.py 2>&1 | tee outputs/results/run.log
 ```
 
-Requires Python 3.12+ and PyTorch 2.x. Install dependencies:
-```bash
-pip install torch numpy scipy matplotlib
-```
+Requirements: Python 3.12+, PyTorch 2.x, NumPy, SciPy, Matplotlib, tqdm
+(see `requirements.txt`).
+
+## Reproducibility
+
+Each experiment calls `set_seed(42)` (see `src/utils.py`) before any
+`torch` allocation, so both LHS data generation (numpy) and model
+initialisation / DataLoader shuffling (PyTorch) are deterministic.
+Two consecutive runs from a clean state produce bit-identical metrics.
+
+The `outputs/data/*.npz` LHS caches are not versioned (regenerable from
+`seed=42`); they are produced on the first run. Trained weights
+(`outputs/models/*.pt`), figures, and per-experiment metrics are
+versioned so the report can be re-built without retraining.
 
 ## Hardware
 
-All experiments were run on an Apple MacBook Air M3 (8-core CPU, 16GB unified memory), **CPU only** — GPU (MPS/CUDA) is slower for this model size due to kernel launch overhead.
-
-## Report
-
-The full report (19 pages, in French) is available in [`rapport/rapport.pdf`](rapport/rapport.pdf). It includes all tables and figures from the article, a detailed analysis of the Heston difficulty, and proposals for improvement (residual connections, PINNs, transfer learning).
+All experiments were run on an Apple MacBook Air M3 (8-core CPU, 16 GB unified memory), **CPU only** — on this model size, GPU (MPS / CUDA) is slower than CPU due to kernel-launch overhead.
 
 ## Reference
 

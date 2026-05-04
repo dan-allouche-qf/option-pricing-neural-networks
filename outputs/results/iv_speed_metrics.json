@@ -1,0 +1,29 @@
+{
+  "Newton-Raphson": {
+    "time": 6.455067157745361,
+    "robust": false
+  },
+  "Brent": {
+    "time": 7.620163679122925,
+    "robust": false
+  },
+  "Secant": {
+    "time": 5.348933219909668,
+    "robust": false
+  },
+  "Bisection": {
+    "time": 20.592139959335327,
+    "robust": false
+  },
+  "IV-ANN (CPU)": {
+    "time": 0.02384495735168457,
+    "robust": true
+  },
+  "_ann_accuracy": {
+    "MSE": 2.2851617000232988e-05,
+    "RMSE": 0.004780336494456534,
+    "MAE": 0.000896867080021908,
+    "MAPE": 0.02521546581227545,
+    "R2": 0.9996959862930446
+  }
+}
