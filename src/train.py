@@ -1,12 +1,8 @@
 """Training loop for the pricing MLP (Section 3.2-3.3 of the article).
 
-Uses Adam optimizer with step-decay learning rate (Figure 4 of the article).
-
-CRITICAL FIX vs previous implementation:
-- Previously used `ExponentialLR` (smooth exponential decay).
-- Article Figure 4 clearly shows a **step decay** (discontinuous drops) at
-  epochs ~1000 and ~2000 with gamma=0.1, giving 1e-3 -> 1e-4 -> 1e-5.
-- Fixed to use `MultiStepLR(milestones=[epochs//3, 2*epochs//3], gamma=0.1)`.
+Uses Adam optimizer with step-decay learning rate (Figure 4 of the article):
+MultiStepLR at milestones=[epochs//3, 2*epochs//3] with gamma=0.1, so
+lr goes 1e-3 -> 1e-4 -> 1e-5 as in Figure 4 of the paper.
 """
 
 import time

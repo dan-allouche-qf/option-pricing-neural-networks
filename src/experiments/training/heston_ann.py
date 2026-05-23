@@ -2,11 +2,12 @@
 
 Faithful to the article (Section 4.4.1):
 - 1,000,000 samples via LHS (Table 9)
-- COS method with N=1500, L=50 (robust, no integration-range clamp)
+- COS method with N=1500, L=50 (no static clamp on the integration range)
 - Split 80/10/10
 - 3000 epochs, step-decay LR (Figure 4)
-- Minimal filtering: prices finite and in [intrinsic, S]
-- No normalization, no V<0.67 hack — those were workarounds for a COS bug
+- Filtering: only reject samples whose COS price is non-finite or outside
+  the static no-arbitrage interval [intrinsic, S]
+- No output normalization
 """
 
 import os
